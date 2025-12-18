@@ -5,226 +5,410 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>会員登録</title>
 
-  <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
-    body { font-family: system-ui, sans-serif; padding: 18px; }
-    h3 { margin: 0 0 12px 0; }
-    input, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
-    #status { background: #f3f3f3; padding: 10px; border-radius: 8px; margin: 10px 0; }
-    #debugLog {
-      white-space: pre-wrap; font-size: 12px; color: #b00;
-      background:#fff0f0; border:1px solid #f5b5b5;
-      padding:8px; border-radius:8px; min-height: 80px;
+    :root{
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --primary2:#1d4ed8;
+      --ok: #065f46;
+      --okbg:#ecfdf5;
+      --ng: #991b1b;
+      --ngbg:#fef2f2;
+      --shadow: 0 10px 25px rgba(0,0,0,.06);
+      --radius: 16px;
     }
-    button { font-weight: 700; }
-    .muted { color:#666; font-size:12px; margin-top:8px; }
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Noto Sans JP", "Segoe UI", sans-serif;
+    }
+    .wrap{
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    h1{
+      font-size: 20px;
+      margin: 0 0 10px 0;
+      letter-spacing: .02em;
+    }
+    .sub{
+      margin: 0 0 14px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .banner{
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: 10px 0 14px 0;
+      background: #eef2ff;
+      color: #1e3a8a;
+      font-size: 13px;
+      border: 1px solid #e0e7ff;
+    }
+    .msg{
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: 10px 0 14px 0;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+    .msg.ok{ background: var(--okbg); color: var(--ok); border-color: #a7f3d0; }
+    .msg.ng{ background: var(--ngbg); color: var(--ng); border-color: #fecaca; }
+
+    .grid{
+      display: grid;
+      gap: 12px;
+    }
+    .field label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 6px 2px;
+    }
+    .field input, .field textarea{
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-size: 16px;
+      outline: none;
+      background: #fff;
+    }
+    .field textarea{ min-height: 90px; resize: vertical; }
+    .field input:focus, .field textarea:focus{
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+    .row2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px){
+      .row2{ grid-template-columns: 1fr; }
+    }
+    .btn{
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(180deg, var(--primary), var(--primary2));
+      cursor: pointer;
+    }
+    .btn:disabled{
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .footer{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    /* debug */
+    #debugWrap{
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed #f3a4a4;
+      background: #fff0f0;
+      display:none; /* 通常は非表示 */
+    }
+    #debugLog{
+      white-space: pre-wrap;
+      font-size: 12px;
+      color:#b00;
+      margin:0;
+    }
   </style>
 </head>
+
 <body>
-  <h3>会員登録</h3>
+  <div class="wrap">
+    <div class="card">
+      <h1>会員登録</h1>
+      <p class="sub">LINE連携のうえ、お客様情報を登録します。電話番号はハイフンありでもOKです。</p>
 
-  <!-- ★必須：JSが必ず触る要素 -->
-  <div id="status">初期化中...</div>
-  <pre id="debugLog"></pre>
+      <div id="status" class="banner">読み込み中...</div>
+      <div id="result" class="msg" style="display:none;"></div>
 
-  <form id="myForm">
-    <input type="text" id="name" required placeholder="お名前" />
-    <input type="tel" id="phone" required placeholder="電話番号（ハイフン可）" />
-    <input type="hidden" id="lineUserId" />
-    <button type="submit" id="submitBtn">登録する</button>
-  </form>
+      <form id="myForm">
+        <div class="grid">
+          <div class="field">
+            <label for="name">お名前 *</label>
+            <input id="name" name="name" autocomplete="name" required placeholder="例）山田 太郎" />
+          </div>
 
-  <div class="muted">
-    ※うまくいかない場合は、LINEアプリを完全終了→再起動してからもう一度開いてください。
+          <div class="field">
+            <label for="kana">お名前（カナ）</label>
+            <input id="kana" name="kana" autocomplete="off" placeholder="例）ヤマダ タロウ" />
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="phone">電話番号 *</label>
+              <input id="phone" name="phone" inputmode="tel" autocomplete="tel" required placeholder="例）090-1234-5678" />
+            </div>
+
+            <div class="field">
+              <label for="email">メール</label>
+              <input id="email" name="email" inputmode="email" autocomplete="email" placeholder="例）taro@example.com" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="memo">メモ</label>
+            <textarea id="memo" name="memo" placeholder="任意：注意事項やご要望など"></textarea>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn">登録する</button>
+        </div>
+
+        <!-- 自動入力 -->
+        <input type="hidden" id="lineUserId" name="lineUserId" />
+      </form>
+
+      <div id="debugWrap">
+        <pre id="debugLog"></pre>
+      </div>
+
+      <div class="footer">
+        うまくいかない場合は、LINEアプリを完全終了→再起動して再度お試しください。
+      </div>
+    </div>
   </div>
 
 <script>
-/**
- * ========= 設定 =========
- */
-const MY_LIFF_ID = "2008725016-UORywLSJ";
-const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
+  /**
+   * ========= 設定 =========
+   */
+  const MY_LIFF_ID = "2008725016-UORywLSJ";
+  const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
+  const API_TOKEN = ""; // GAS側でAPI_TOKENを設定した場合のみ同じ値を入れる
 
-// GAS側でAPI_TOKENを設定した場合のみ同じ値を入れる（未使用なら空でOK）
-const API_TOKEN = "";
+  /**
+   * ========= ユーティリティ =========
+   */
+  const $ = (id) => document.getElementById(id);
 
-/**
- * ========= UIヘルパ =========
- */
-function el(id) { return document.getElementById(id); }
+  const isDebug = new URLSearchParams(location.search).get("debug") === "1";
+  if (isDebug) $("debugWrap").style.display = "block";
 
-function setStatus(msg) {
-  const s = el("status");
-  if (s) s.textContent = msg;
-}
+  function log(msg){
+    if (!isDebug) return;
+    const d = $("debugLog");
+    if (d) d.textContent += msg + "\n";
+  }
 
-function log(msg) {
-  const d = el("debugLog");
-  if (d) d.textContent += msg + "\n";
-}
+  function setStatus(msg){
+    const s = $("status");
+    if (s) s.textContent = msg;
+  }
 
-/**
- * ========= 例外を握りつぶさない =========
- */
-window.onerror = function(message, source, lineno, colno, error) {
-  setStatus("JSエラー");
-  log("window.onerror: " + message);
-  if (error && error.stack) log(error.stack);
-};
+  function showResult(type, msg){
+    const r = $("result");
+    r.className = "msg " + (type === "ok" ? "ok" : "ng");
+    r.textContent = msg;
+    r.style.display = "block";
+  }
 
-/**
- * ========= 電話番号正規化（クライアント側） =========
- * ※最終的にはGAS側で正規化するので、ここは補助
- */
-function normalizePhoneClient(phone) {
-  if (!phone) return "";
-  let s = String(phone).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-  s = s.replace(/[ー－―‐]/g, "-");
-  s = s.replace(/\D/g, "");
-  return s;
-}
+  function clearResult(){
+    const r = $("result");
+    r.style.display = "none";
+    r.textContent = "";
+    r.className = "msg";
+  }
 
-/**
- * ========= JSONP =========
- */
-function jsonpRequest(url, params) {
-  return new Promise((resolve, reject) => {
-    const cbName = "__cb_" + Math.random().toString(36).slice(2);
+  // 全角→半角（数字）
+  function toHalfWidthDigits(str){
+    return String(str || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  }
 
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new Error("JSONP timeout"));
-    }, 15000);
+  // 電話番号：入力補助（自動ハイフン）
+  // ざっくり日本の一般的な形：11桁(090/080/070) → 3-4-4、10桁(固定/一部) → 2-4-4 or 3-3-4 等があるが、
+  // ここでは「見た目補助」なので最も多い形に寄せ、最終はGAS側で数字だけ正規化する。
+  function formatPhoneWithHyphen(raw){
+    let s = toHalfWidthDigits(raw).replace(/[ー－―‐]/g, "-");
+    s = s.replace(/\D/g, ""); // 数字だけ
 
-    function cleanup() {
-      clearTimeout(timer);
-      try { delete window[cbName]; } catch (_) {}
-      if (script && script.parentNode) script.parentNode.removeChild(script);
+    // 0始まり前提で整形
+    if (s.length <= 3) return s;
+    if (s.length <= 7) return s.replace(/^(\d{3})(\d+)$/, "$1-$2");
+    if (s.length <= 11) return s.replace(/^(\d{3})(\d{4})(\d+)$/, "$1-$2-$3");
+
+    // 11桁超は以降はそのまま（入力ミスの可能性）
+    return s;
+  }
+
+  function normalizePhoneClient(raw){
+    // 送信用は数字だけ
+    return toHalfWidthDigits(raw).replace(/[ー－―‐]/g, "-").replace(/\D/g, "");
+  }
+
+  // JSONP
+  function jsonpRequest(url, params) {
+    return new Promise((resolve, reject) => {
+      const cbName = "__cb_" + Math.random().toString(36).slice(2);
+      const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, 15000);
+
+      function cleanup(){
+        clearTimeout(timer);
+        try { delete window[cbName]; } catch(_){}
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[cbName] = (data) => { cleanup(); resolve(data); };
+
+      const q = new URLSearchParams({ ...params, callback: cbName });
+      const script = document.createElement("script");
+      script.src = url + "?" + q.toString();
+      script.onerror = () => { cleanup(); reject(new Error("JSONP script load error")); };
+      document.head.appendChild(script);
+    });
+  }
+
+  function withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timeout after " + ms + "ms")), ms)),
+    ]);
+  }
+
+  /**
+   * ========= LIFF 初期化 =========
+   */
+  window.addEventListener("load", async () => {
+    try {
+      clearResult();
+      setStatus("LIFF初期化中...");
+      log("href: " + location.href);
+      log("ua: " + navigator.userAgent);
+
+      await withTimeout(
+        liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true }),
+        15000,
+        "liff.init"
+      );
+      await liff.ready;
+
+      log("isInClient: " + liff.isInClient());
+      log("isLoggedIn: " + liff.isLoggedIn());
+
+      if (!liff.isLoggedIn()) {
+        setStatus("LINEログイン中...");
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      $("lineUserId").value = profile.userId;
+
+      setStatus("LINE連携OK： " + profile.displayName);
+
+    } catch (e) {
+      setStatus("初期化エラー");
+      showResult("ng", "初期化に失敗しました。時間をおいて再度お試しください。");
+      log("FATAL: " + (e.stack || e.message || e));
     }
-
-    window[cbName] = (data) => {
-      cleanup();
-      resolve(data);
-    };
-
-    const q = new URLSearchParams({ ...params, callback: cbName });
-
-    const script = document.createElement("script");
-    script.src = url + "?" + q.toString();
-    script.onerror = () => {
-      cleanup();
-      reject(new Error("JSONP script load error"));
-    };
-
-    document.head.appendChild(script);
   });
-}
 
-/**
- * ========= LIFF初期化 =========
- */
-function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timeout after " + ms + "ms")), ms)),
-  ]);
-}
+  /**
+   * ========= 電話番号入力補助 =========
+   */
+  const phoneEl = $("phone");
+  phoneEl.addEventListener("input", () => {
+    const before = phoneEl.value;
+    const formatted = formatPhoneWithHyphen(before);
+    if (formatted !== before) phoneEl.value = formatted;
+  });
 
-document.addEventListener("DOMContentLoaded", () => {
-  setStatus("読み込み中...");
-  log("DOM loaded");
-  log("href: " + location.href);
-  log("ua: " + navigator.userAgent);
-});
+  /**
+   * ========= 送信 =========
+   */
+  $("myForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    clearResult();
 
-window.addEventListener("load", async () => {
-  try {
-    setStatus("LIFF初期化中...");
-    log("LIFF init start: " + MY_LIFF_ID);
+    const btn = $("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "登録中...";
 
-    await withTimeout(
-      liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true }),
-      15000,
-      "liff.init"
-    );
+    try {
+      const name = $("name").value.trim();
+      const kana = $("kana").value.trim();
+      const phoneRaw = $("phone").value.trim();
+      const email = $("email").value.trim();
+      const memo = $("memo").value.trim();
+      const lineUserId = $("lineUserId").value.trim();
 
-    log("LIFF init OK");
-    await liff.ready;
-    log("liff.ready OK");
+      if (!name) throw new Error("お名前を入力してください");
+      const phone = normalizePhoneClient(phoneRaw);
+      if (!phone) throw new Error("電話番号を正しく入力してください");
 
-    log("isInClient: " + liff.isInClient());
-    log("isLoggedIn: " + liff.isLoggedIn());
+      setStatus("送信中...");
+      log("submit payload: " + JSON.stringify({ name, kana, phone, email, memo, lineUserId }));
 
-    if (!liff.isLoggedIn()) {
-      setStatus("ログイン中...");
-      log("calling liff.login()");
-      liff.login({ redirectUri: location.href });
-      return;
+      const params = {
+        action: "processForm",
+        name,
+        kana,
+        phone,
+        email,
+        memo,
+        lineUserId,
+      };
+      if (API_TOKEN) params.token = API_TOKEN;
+
+      const res = await jsonpRequest(GAS_EXEC_URL, params);
+
+      if (!res || res.status === "error") {
+        throw new Error((res && res.message) ? res.message : "登録に失敗しました");
+      }
+
+      // 新規/更新で出し分け
+      const label = (res.status === "created") ? "新規登録" : "更新";
+      const msg = `${label}しました。${res.message}`;
+
+      showResult("ok", msg + (res.normalizedPhone ? `（電話：${res.normalizedPhone}）` : ""));
+      setStatus("完了");
+
+      // LINE内なら少し見せて閉じる
+      if (liff.isInClient()) {
+        setTimeout(() => liff.closeWindow(), 900);
+      }
+
+    } catch (e) {
+      setStatus("送信エラー");
+      showResult("ng", e.message || String(e));
+      log("SEND ERROR: " + (e.stack || e.message || e));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "登録する";
     }
-
-    const profile = await liff.getProfile();
-    el("lineUserId").value = profile.userId;
-    setStatus("LINE連携OK: " + profile.displayName);
-    log("profile OK: " + profile.userId);
-
-  } catch (e) {
-    setStatus("LIFF初期化エラー");
-    log("FATAL: " + (e.stack || e.message || e));
-  }
-});
-
-/**
- * ========= 送信 =========
- */
-el("myForm").addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-
-  const btn = el("submitBtn");
-  btn.disabled = true;
-  btn.textContent = "送信中...";
-
-  try {
-    const name = el("name").value.trim();
-    const phoneRaw = el("phone").value.trim();
-    const phone = normalizePhoneClient(phoneRaw);
-    const lineUserId = el("lineUserId").value.trim();
-
-    if (!name) throw new Error("お名前を入力してください");
-    if (!phone) throw new Error("電話番号を正しく入力してください");
-
-    setStatus("送信中...");
-    log("submit payload: " + JSON.stringify({ name, phone, lineUserId }));
-
-    const params = {
-      action: "processForm",
-      name,
-      phone,       // 正規化済み（GASでも再正規化）
-      lineUserId,
-    };
-    if (API_TOKEN) params.token = API_TOKEN;
-
-    const res = await jsonpRequest(GAS_EXEC_URL, params);
-
-    if (!res || res.status === "error") {
-      throw new Error((res && res.message) ? res.message : "登録に失敗しました");
-    }
-
-    setStatus(res.message);
-    alert(res.message + (res.normalizedPhone ? ("\n（電話: " + res.normalizedPhone + "）") : ""));
-
-    if (liff.isInClient()) liff.closeWindow();
-
-  } catch (e) {
-    setStatus("送信エラー");
-    alert("送信エラー: " + (e.message || e));
-    log("SEND ERROR: " + (e.stack || e.message || e));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "登録する";
-  }
-});
+  });
 </script>
 </body>
 </html>
