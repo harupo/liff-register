@@ -1,44 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>会員登録</title>
+
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 18px; }
+    h3 { margin: 0 0 12px 0; }
+    input, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
+    #status { background: #f3f3f3; padding: 10px; border-radius: 8px; margin: 10px 0; }
+    #debugLog {
+      white-space: pre-wrap; font-size: 12px; color: #b00;
+      background:#fff0f0; border:1px solid #f5b5b5;
+      padding:8px; border-radius:8px; min-height: 80px;
+    }
+    button { font-weight: 700; }
+    .muted { color:#666; font-size:12px; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <h3>会員登録</h3>
+
+  <!-- ★必須：JSが必ず触る要素 -->
+  <div id="status">初期化中...</div>
+  <pre id="debugLog"></pre>
+
+  <form id="myForm">
+    <input type="text" id="name" required placeholder="お名前" />
+    <input type="tel" id="phone" required placeholder="電話番号（ハイフン可）" />
+    <input type="hidden" id="lineUserId" />
+    <button type="submit" id="submitBtn">登録する</button>
+  </form>
+
+  <div class="muted">
+    ※うまくいかない場合は、LINEアプリを完全終了→再起動してからもう一度開いてください。
+  </div>
+
 <script>
+/**
+ * ========= 設定 =========
+ */
 const MY_LIFF_ID = "2008725016-UORywLSJ";
+const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
 
-function log(msg){
-  const d = document.getElementById("debugLog");
-  d.textContent += msg + "\n";
+// GAS側でAPI_TOKENを設定した場合のみ同じ値を入れる（未使用なら空でOK）
+const API_TOKEN = "";
+
+/**
+ * ========= UIヘルパ =========
+ */
+function el(id) { return document.getElementById(id); }
+
+function setStatus(msg) {
+  const s = el("status");
+  if (s) s.textContent = msg;
 }
 
-function setStatus(msg){
-  document.getElementById("status").textContent = msg;
+function log(msg) {
+  const d = el("debugLog");
+  if (d) d.textContent += msg + "\n";
 }
 
-// これが出なければ「JS自体が動いてない」
-document.addEventListener("DOMContentLoaded", () => {
-  setStatus("JS起動しました");
-  log("DOM loaded");
-  log("href: " + location.href);
-  log("ua: " + navigator.userAgent);
-});
-
-// 例外を握りつぶさない
+/**
+ * ========= 例外を握りつぶさない =========
+ */
 window.onerror = function(message, source, lineno, colno, error) {
   setStatus("JSエラー");
   log("window.onerror: " + message);
   if (error && error.stack) log(error.stack);
 };
 
+/**
+ * ========= 電話番号正規化（クライアント側） =========
+ * ※最終的にはGAS側で正規化するので、ここは補助
+ */
+function normalizePhoneClient(phone) {
+  if (!phone) return "";
+  let s = String(phone).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  s = s.replace(/[ー－―‐]/g, "-");
+  s = s.replace(/\D/g, "");
+  return s;
+}
+
+/**
+ * ========= JSONP =========
+ */
+function jsonpRequest(url, params) {
+  return new Promise((resolve, reject) => {
+    const cbName = "__cb_" + Math.random().toString(36).slice(2);
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("JSONP timeout"));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[cbName]; } catch (_) {}
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+
+    const q = new URLSearchParams({ ...params, callback: cbName });
+
+    const script = document.createElement("script");
+    script.src = url + "?" + q.toString();
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("JSONP script load error"));
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * ========= LIFF初期化 =========
+ */
 function withTimeout(promise, ms, label) {
   return Promise.race([
     promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
-    ),
+    new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timeout after " + ms + "ms")), ms)),
   ]);
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  setStatus("読み込み中...");
+  log("DOM loaded");
+  log("href: " + location.href);
+  log("ua: " + navigator.userAgent);
+});
+
 window.addEventListener("load", async () => {
-  log("window.load");
   try {
     setStatus("LIFF初期化中...");
-    log("liff.init start: " + MY_LIFF_ID);
+    log("LIFF init start: " + MY_LIFF_ID);
 
     await withTimeout(
       liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true }),
@@ -46,7 +150,7 @@ window.addEventListener("load", async () => {
       "liff.init"
     );
 
-    log("liff.init OK");
+    log("LIFF init OK");
     await liff.ready;
     log("liff.ready OK");
 
@@ -61,6 +165,7 @@ window.addEventListener("load", async () => {
     }
 
     const profile = await liff.getProfile();
+    el("lineUserId").value = profile.userId;
     setStatus("LINE連携OK: " + profile.displayName);
     log("profile OK: " + profile.userId);
 
@@ -69,4 +174,57 @@ window.addEventListener("load", async () => {
     log("FATAL: " + (e.stack || e.message || e));
   }
 });
+
+/**
+ * ========= 送信 =========
+ */
+el("myForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+
+  const btn = el("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "送信中...";
+
+  try {
+    const name = el("name").value.trim();
+    const phoneRaw = el("phone").value.trim();
+    const phone = normalizePhoneClient(phoneRaw);
+    const lineUserId = el("lineUserId").value.trim();
+
+    if (!name) throw new Error("お名前を入力してください");
+    if (!phone) throw new Error("電話番号を正しく入力してください");
+
+    setStatus("送信中...");
+    log("submit payload: " + JSON.stringify({ name, phone, lineUserId }));
+
+    const params = {
+      action: "processForm",
+      name,
+      phone,       // 正規化済み（GASでも再正規化）
+      lineUserId,
+    };
+    if (API_TOKEN) params.token = API_TOKEN;
+
+    const res = await jsonpRequest(GAS_EXEC_URL, params);
+
+    if (!res || res.status === "error") {
+      throw new Error((res && res.message) ? res.message : "登録に失敗しました");
+    }
+
+    setStatus(res.message);
+    alert(res.message + (res.normalizedPhone ? ("\n（電話: " + res.normalizedPhone + "）") : ""));
+
+    if (liff.isInClient()) liff.closeWindow();
+
+  } catch (e) {
+    setStatus("送信エラー");
+    alert("送信エラー: " + (e.message || e));
+    log("SEND ERROR: " + (e.stack || e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "登録する";
+  }
+});
 </script>
+</body>
+</html>
