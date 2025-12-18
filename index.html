@@ -1,54 +1,122 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>LIFF GitHub Pages</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>会員登録</title>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #log { white-space: pre-wrap; font-size: 12px; background: #f6f6f6; padding: 10px; }
+    body { font-family: system-ui, sans-serif; padding: 18px; }
+    input, button, textarea { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
+    #status { background: #f3f3f3; padding: 10px; border-radius: 8px; margin: 10px 0; }
+    #debugLog { white-space: pre-wrap; font-size: 12px; color: #b00; background:#fff0f0; border:1px solid #f5b5b5; padding:8px; border-radius:8px; }
+    button { font-weight: 700; }
   </style>
 </head>
 <body>
-  <h3>LIFF GitHub Pages テスト</h3>
-  <div id="log">loading...</div>
+  <h3>会員登録</h3>
 
-<script>
-const LIFF_ID = "2008725016-UORywLSJ"; // あなたのLIFF ID
+  <div id="status">読み込み中...</div>
+  <div id="debugLog"></div>
 
-function log(msg) {
-  document.getElementById("log").textContent += "\n" + msg;
-}
+  <form id="myForm">
+    <input type="text" id="name" name="name" required placeholder="お名前" />
+    <input type="tel" id="phone" name="phone" required placeholder="電話番号" />
+    <input type="hidden" id="lineUserId" name="lineUserId" />
+    <button type="submit" id="submitBtn">登録する</button>
+  </form>
 
-window.onload = async () => {
-  log("page loaded");
-  log("URL: " + location.href);
+  <script>
+    // === あなたの設定 ===
+    const MY_LIFF_ID = "2008725016-UORywLSJ";
+    const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
 
-  try {
-    await liff.init({
-      liffId: LIFF_ID,
-      withLoginOnExternalBrowser: true
-    });
-    log("liff.init OK");
-
-    if (!liff.isLoggedIn()) {
-      log("not logged in → login()");
-      liff.login({ redirectUri: location.href });
-      return;
+    function log(msg) {
+      document.getElementById("debugLog").textContent += msg + "\n";
     }
 
-    const profile = await liff.getProfile();
-    log("profile OK");
-    log("name: " + profile.displayName);
-    log("userId: " + profile.userId);
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg;
+    }
 
-  } catch (e) {
-    log("ERROR: " + (e.message || e));
-  }
-};
-</script>
+    function formToUrlEncoded(obj) {
+      return Object.entries(obj)
+        .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v ?? ""))
+        .join("&");
+    }
+
+    // LIFF init
+    window.addEventListener("load", async () => {
+      log("1. ページ読み込み完了");
+      log("URL: " + location.href);
+      log("UA: " + navigator.userAgent);
+
+      try {
+        log("2. LIFF初期化開始: " + MY_LIFF_ID);
+        await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
+        log("3. LIFF初期化成功");
+
+        if (!liff.isLoggedIn()) {
+          log("4. 未ログイン -> liff.login()");
+          setStatus("LINEログイン中...");
+          liff.login({ redirectUri: location.href });
+          return;
+        }
+
+        // LINE内でも外部でもウザい時の保険
+        await liff.ready;
+
+        const profile = await liff.getProfile();
+        log("5. プロフィール取得成功: " + profile.displayName);
+        document.getElementById("lineUserId").value = profile.userId;
+        setStatus("LINE連携OK: " + profile.displayName);
+
+      } catch (e) {
+        log("致命的エラー: " + (e.stack || e.message || e));
+        setStatus("初期化エラー");
+      }
+    });
+
+    // 送信処理
+    document.getElementById("myForm").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "送信中...";
+
+      const formData = {
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        lineUserId: document.getElementById("lineUserId").value,
+      };
+
+      log("送信ボタンクリック");
+      log("payload: " + JSON.stringify(formData));
+
+      try {
+        // (A) まずは確実に通す：no-cors で送信（レスポンスは読めないが投稿はできる）
+        await fetch(GAS_EXEC_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: formToUrlEncoded(formData),
+        });
+
+        alert("送信しました（反映まで数秒かかる場合があります）");
+
+        // LINEアプリ内なら閉じる
+        if (liff.isInClient()) liff.closeWindow();
+
+      } catch (e) {
+        alert("送信エラー: " + (e.message || e));
+        log("送信エラー: " + (e.stack || e.message || e));
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "登録する";
+      }
+    });
+  </script>
 </body>
 </html>
