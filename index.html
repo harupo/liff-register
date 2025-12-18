@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>LIFF GitHub Pages</title>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #log { white-space: pre-wrap; font-size: 12px; background: #f6f6f6; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h3>LIFF GitHub Pages テスト</h3>
+  <div id="log">loading...</div>
+
+<script>
+const LIFF_ID = "2008725016-UORywLSJ"; // あなたのLIFF ID
+
+function log(msg) {
+  document.getElementById("log").textContent += "\n" + msg;
+}
+
+window.onload = async () => {
+  log("page loaded");
+  log("URL: " + location.href);
+
+  try {
+    await liff.init({
+      liffId: LIFF_ID,
+      withLoginOnExternalBrowser: true
+    });
+    log("liff.init OK");
+
+    if (!liff.isLoggedIn()) {
+      log("not logged in → login()");
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    const profile = await liff.getProfile();
+    log("profile OK");
+    log("name: " + profile.displayName);
+    log("userId: " + profile.userId);
+
+  } catch (e) {
+    log("ERROR: " + (e.message || e));
+  }
+};
+</script>
+</body>
+</html>
