@@ -298,42 +298,47 @@
   }
 
   /**
-   * ========= LIFF 初期化 =========
-   */
-  window.addEventListener("load", async () => {
-    try {
-      clearResult();
-      setStatus("LIFF初期化中...");
-      log("href: " + location.href);
-      log("ua: " + navigator.userAgent);
-
-      await withTimeout(
-        liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true }),
-        15000,
-        "liff.init"
-      );
-      await liff.ready;
-
-      log("isInClient: " + liff.isInClient());
-      log("isLoggedIn: " + liff.isLoggedIn());
-
-      if (!liff.isLoggedIn()) {
-        setStatus("LINEログイン中...");
-        liff.login({ redirectUri: location.href });
-        return;
+     * ========= LIFF 初期化 =========
+     */
+    window.addEventListener("load", async () => {
+      try {
+        clearResult();
+        setStatus("LIFF初期化中...");
+        log("href: " + location.href);
+        log("ua: " + navigator.userAgent);
+  
+        // 【修正1】withLoginOnExternalBrowser: true を削除しました
+        await withTimeout(
+          liff.init({ liffId: MY_LIFF_ID }),
+          15000,
+          "liff.init"
+        );
+        await liff.ready;
+  
+        log("isInClient: " + liff.isInClient());
+        log("isLoggedIn: " + liff.isLoggedIn());
+  
+        // 【修正2】ログインしていない場合の分岐を変更
+        if (liff.isLoggedIn()) {
+          // --- ログイン済み（LINEアプリ内など）の場合 ---
+          const profile = await liff.getProfile();
+          $("lineUserId").value = profile.userId;
+          setStatus("LINE連携OK： " + profile.displayName);
+        } else {
+          // --- 未ログイン（PCブラウザなど）の場合 ---
+          // 強制ログイン(liff.login)を削除し、ゲストモードとして表示
+          setStatus("Webブラウザモード（ゲスト利用）");
+          
+          // 必要であれば、ここに「LINEログインボタン」を表示する処理を追加してもOK
+          // 例: $("loginButtonArea").style.display = "block";
+        }
+  
+      } catch (e) {
+        setStatus("初期化エラー");
+        showResult("ng", "初期化に失敗しました。時間をおいて再度お試しください。");
+        log("FATAL: " + (e.stack || e.message || e));
       }
-
-      const profile = await liff.getProfile();
-      $("lineUserId").value = profile.userId;
-
-      setStatus("LINE連携OK： " + profile.displayName);
-
-    } catch (e) {
-      setStatus("初期化エラー");
-      showResult("ng", "初期化に失敗しました。時間をおいて再度お試しください。");
-      log("FATAL: " + (e.stack || e.message || e));
-    }
-  });
+    });
 
   /**
    * ========= 電話番号入力補助 =========
