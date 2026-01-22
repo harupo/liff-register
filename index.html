@@ -231,7 +231,7 @@ function jsonpRequest(url, params) {
   });
 }
 
-/* ========= Phone helper（あなたの既存のまま） ========= */
+/* ========= Phone helper ========= */
 function toHalfWidthDigits(str){
   return String(str || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 }
@@ -257,16 +257,21 @@ async function initLiff(){
   await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
   await liff.ready;
 
-  // クエリで受け取った route を hash ルーティングへ反映
+  // ✅ 改善①：hash未指定（または # のみ）の時だけ route を hash に反映
   const route = new URLSearchParams(location.search).get("route");
-  if (route === "reserve")   location.hash = "#/reserve";
-  if (route === "register")  location.hash = "#/register";
+  const h = location.hash || "";
+  const hasMeaningfulHash = (h.startsWith("#/"));
+  if (!hasMeaningfulHash) {
+    if (route === "reserve")   location.hash = "#/reserve";
+    if (route === "register")  location.hash = "#/register";
+  }
 
   log("isInClient: " + liff.isInClient());
   log("isLoggedIn: " + liff.isLoggedIn());
 
   if(!liff.isLoggedIn()){
-    // 外部ブラウザでも予約したいなら login へ
+    // ✅ 改善②：未ログイン時のUX改善（ステータス表示）
+    setStatus("LINEログインが必要です。ログイン画面へ移動します...");
     liff.login({ redirectUri: location.href });
     return;
   }
@@ -325,7 +330,7 @@ $("tabRegister").addEventListener("click", ()=> location.hash="#/register");
 $("tabReserve").addEventListener("click", ()=> location.hash="#/reserve");
 window.addEventListener("hashchange", route);
 
-/* ========= Register submit（既存のまま） ========= */
+/* ========= Register submit ========= */
 $("phone").addEventListener("input", ()=>{
   const before = $("phone").value;
   const formatted = formatPhoneWithHyphen(before);
@@ -406,7 +411,6 @@ async function loadCalendar(){
   }
   const map = res.data || {};
 
-  // build table
   const dates=[];
   for(let i=0;i<days;i++){
     const d=new Date(currentStart);
@@ -451,7 +455,11 @@ async function loadCalendar(){
 }
 
 /* ========= Confirm ========= */
+let reserving = false; // ✅ 改善③：二重送信ガード（画面全体で共通化）
 async function openConfirm(date, time){
+  reserving = false;
+  $("confirmReserveBtn").disabled = false;
+
   if(!date || !time){
     showResult("ng","日時が不正です");
     return;
@@ -477,7 +485,10 @@ async function openConfirm(date, time){
   $("backToCalendar").onclick = ()=> location.hash = "#/reserve";
 
   $("confirmReserveBtn").onclick = async ()=>{
+    if (reserving) return;         // ✅ 改善③
+    reserving = true;              // ✅ 改善③
     $("confirmReserveBtn").disabled = true;
+
     try{
       const params = {
         action:"createReservation",
@@ -493,10 +504,20 @@ async function openConfirm(date, time){
       showResult("ok", `予約が完了しました。\n予約番号：${res.reservationNo}\n${res.reservedAtText}`);
       setStatus("完了");
 
-      if (liff.isInClient()) setTimeout(()=> liff.closeWindow(), 1200);
+      // ✅ 改善④：外部ブラウザでは閉じないので、カレンダーを更新して戻す
+      if (!liff.isInClient()) {
+        await loadCalendar();
+        setTimeout(() => { location.hash = "#/reserve"; }, 500);
+        return;
+      }
+
+      // LINE内なら少し見せて閉じる
+      setTimeout(()=> liff.closeWindow(), 1200);
+
     }catch(e){
       showResult("ng", e.message || String(e));
       $("confirmReserveBtn").disabled = false;
+      reserving = false;            // ✅ 改善③（失敗時は解除）
     }
   };
 }
