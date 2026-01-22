@@ -3,158 +3,93 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>会員登録</title>
-
+  <title>会員登録 / 来店予約</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
     :root{
-      --bg: #f6f7fb;
-      --card: #ffffff;
-      --text: #111827;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --primary: #2563eb;
-      --primary2:#1d4ed8;
-      --ok: #065f46;
-      --okbg:#ecfdf5;
-      --ng: #991b1b;
-      --ngbg:#fef2f2;
-      --shadow: 0 10px 25px rgba(0,0,0,.06);
-      --radius: 16px;
+      --bg:#f6f7fb; --card:#fff; --text:#111827; --muted:#6b7280; --border:#e5e7eb;
+      --primary:#2563eb; --primary2:#1d4ed8;
+      --ok:#065f46; --okbg:#ecfdf5; --ng:#991b1b; --ngbg:#fef2f2;
+      --shadow:0 10px 25px rgba(0,0,0,.06); --radius:16px;
+      --sat:#eef6ff; --sun:#fff1f2;
     }
-    * { box-sizing: border-box; }
-    body{
-      margin:0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Noto Sans JP", "Segoe UI", sans-serif;
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans JP","Segoe UI",sans-serif}
+    .wrap{max-width:920px;margin:0 auto;padding:18px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .title{font-size:18px;font-weight:800}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{
+      border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font-weight:800;
+      cursor:pointer;font-size:13px
     }
-    .wrap{
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 18px;
-    }
-    .card{
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px;
-    }
-    h1{
-      font-size: 20px;
-      margin: 0 0 10px 0;
-      letter-spacing: .02em;
-    }
-    .sub{
-      margin: 0 0 14px 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-    .banner{
-      border-radius: 12px;
-      padding: 10px 12px;
-      margin: 10px 0 14px 0;
-      background: #eef2ff;
-      color: #1e3a8a;
-      font-size: 13px;
-      border: 1px solid #e0e7ff;
-    }
-    .msg{
-      border-radius: 12px;
-      padding: 10px 12px;
-      margin: 10px 0 14px 0;
-      font-size: 13px;
-      border: 1px solid var(--border);
-      background: #fff;
-    }
-    .msg.ok{ background: var(--okbg); color: var(--ok); border-color: #a7f3d0; }
-    .msg.ng{ background: var(--ngbg); color: var(--ng); border-color: #fecaca; }
+    .tab.active{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
+    .sub{margin:8px 0 14px;color:var(--muted);font-size:12px;line-height:1.4}
+    .banner{border-radius:12px;padding:10px 12px;margin:10px 0 14px;background:#eef2ff;color:#1e3a8a;font-size:13px;border:1px solid #e0e7ff}
+    .msg{border-radius:12px;padding:10px 12px;margin:10px 0 14px;font-size:13px;border:1px solid var(--border);background:#fff;display:none}
+    .msg.ok{background:var(--okbg);color:var(--ok);border-color:#a7f3d0}
+    .msg.ng{background:var(--ngbg);color:var(--ng);border-color:#fecaca}
+    .grid{display:grid;gap:12px}
+    .field label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px 2px}
+    .field input,.field textarea{width:100%;border:1px solid var(--border);border-radius:12px;padding:12px 12px;font-size:16px;outline:none;background:#fff}
+    .field textarea{min-height:90px;resize:vertical}
+    .field input:focus,.field textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:520px){.row2{grid-template-columns:1fr}}
+    .btn{width:100%;border:none;border-radius:14px;padding:12px 14px;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(180deg,var(--primary),var(--primary2));cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btnSub{width:100%;border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:15px;font-weight:800;background:#fff;cursor:pointer}
+    .footer{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5;text-align:center}
 
-    .grid{
-      display: grid;
-      gap: 12px;
+    /* Reservation table */
+    .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:8px 0 10px}
+    .barBtn{border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:8px 10px;font-weight:800;cursor:pointer}
+    .note{font-size:12px;color:#666;margin:6px 0 10px}
+    .tableWrap{border:1px solid var(--border);border-radius:12px;overflow:auto;background:#fff}
+    table{border-collapse:collapse;min-width:760px;width:100%}
+    th,td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:8px;text-align:center;vertical-align:middle}
+    th{background:#fafafa;font-size:12px;font-weight:800;position:sticky;top:0;z-index:2}
+    th.timeHead{left:0;z-index:3;position:sticky}
+    td.timeCell{background:#fafafa;font-weight:800;position:sticky;left:0;z-index:1}
+    .daySat{background:var(--sat)}
+    .daySun{background:var(--sun)}
+    .cell{min-width:64px}
+    .x{color:#9ca3af}
+    .disabled{background:#f3f4f6;color:#9ca3af}
+    .okMark{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:28px;height:28px;border-radius:999px;border:2px solid #ef4444;color:#ef4444;
+      font-weight:900;cursor:pointer;user-select:none;
     }
-    .field label{
-      display:block;
-      font-size: 12px;
-      color: var(--muted);
-      margin: 0 0 6px 2px;
-    }
-    .field input, .field textarea{
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 12px;
-      font-size: 16px;
-      outline: none;
-      background: #fff;
-    }
-    .field textarea{ min-height: 90px; resize: vertical; }
-    .field input:focus, .field textarea:focus{
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
-    }
-    .row2{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 520px){
-      .row2{ grid-template-columns: 1fr; }
-    }
-    .btn{
-      width: 100%;
-      border: none;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-      background: linear-gradient(180deg, var(--primary), var(--primary2));
-      cursor: pointer;
-    }
-    .btn:disabled{
-      opacity: .6;
-      cursor: not-allowed;
-    }
-    .footer{
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-      text-align: center;
-    }
+    .okMark:hover{transform:scale(1.06)}
+    .loading{padding:14px;color:#666}
 
     /* debug */
-    #debugWrap{
-      margin-top: 12px;
-      padding: 10px;
-      border-radius: 12px;
-      border: 1px dashed #f3a4a4;
-      background: #fff0f0;
-      display:none; /* 通常は非表示 */
-    }
-    #debugLog{
-      white-space: pre-wrap;
-      font-size: 12px;
-      color:#b00;
-      margin:0;
-    }
+    #debugWrap{margin-top:12px;padding:10px;border-radius:12px;border:1px dashed #f3a4a4;background:#fff0f0;display:none}
+    #debugLog{white-space:pre-wrap;font-size:12px;color:#b00;margin:0}
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>会員登録</h1>
-      <p class="sub">LINE連携のうえ、お客様情報を登録します。電話番号はハイフンありでもOKです。</p>
+<div class="wrap">
+  <div class="card">
+    <div class="topbar">
+      <div class="title" id="pageTitle">会員登録</div>
+      <div class="tabs">
+        <button class="tab" id="tabRegister">会員登録</button>
+        <button class="tab" id="tabReserve">来店予約</button>
+      </div>
+    </div>
 
-      <div id="status" class="banner">読み込み中...</div>
-      <div id="result" class="msg" style="display:none;"></div>
+    <p class="sub" id="pageSub">LINE連携のうえ、お客様情報を登録します。電話番号はハイフンありでもOKです。</p>
 
+    <div id="status" class="banner">読み込み中...</div>
+    <div id="result" class="msg"></div>
+
+    <!-- ===== Register View ===== -->
+    <section id="viewRegister" style="display:none">
       <form id="myForm">
         <div class="grid">
           <div class="field">
@@ -187,233 +122,391 @@
           <button type="submit" id="submitBtn" class="btn">登録する</button>
         </div>
 
-        <!-- 自動入力 -->
         <input type="hidden" id="lineUserId" name="lineUserId" />
       </form>
+    </section>
 
-      <div id="debugWrap">
-        <pre id="debugLog"></pre>
+    <!-- ===== Reserve Calendar View ===== -->
+    <section id="viewReserve" style="display:none">
+      <div class="bar">
+        <button class="barBtn" id="prevBtn">前の一週間</button>
+        <div id="rangeLabel" style="font-weight:800;font-size:13px"></div>
+        <button class="barBtn" id="nextBtn">次の一週間</button>
       </div>
+      <div class="note">〇：予約可 / ×：満席または予約不可（灰色＝枠未登録）</div>
+      <div class="tableWrap">
+        <div id="tableArea" class="loading">読み込み中...</div>
+      </div>
+    </section>
 
-      <div class="footer">
-        うまくいかない場合は、LINEアプリを完全終了→再起動して再度お試しください。
+    <!-- ===== Reserve Confirm View ===== -->
+    <section id="viewConfirm" style="display:none">
+      <div class="grid">
+        <div class="field">
+          <label>予約日時</label>
+          <input id="confirmDt" readonly />
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>お名前</label>
+            <input id="cName" readonly />
+          </div>
+          <div class="field">
+            <label>電話番号</label>
+            <input id="cPhone" readonly />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>メール</label>
+          <input id="cEmail" readonly />
+        </div>
+
+        <div class="field">
+          <label>コメント（任意）</label>
+          <textarea id="cComment" placeholder="任意：要望や注意事項など"></textarea>
+        </div>
+
+        <div class="row2">
+          <button class="btnSub" id="backToCalendar">戻る</button>
+          <button class="btn" id="confirmReserveBtn">予約する</button>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <div id="debugWrap"><pre id="debugLog"></pre></div>
+
+    <div class="footer">うまくいかない場合は、LINEアプリを完全終了→再起動して再度お試しください。</div>
   </div>
+</div>
 
 <script>
-  /**
-   * ========= 設定 =========
-   */
-  const MY_LIFF_ID = "2008725016-UORywLSJ";
-  const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
-  const API_TOKEN = ""; // GAS側でAPI_TOKENを設定した場合のみ同じ値を入れる
+/* ========= 設定 ========= */
+const MY_LIFF_ID = "2008725016-UORywLSJ";
+const GAS_EXEC_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
+const API_TOKEN = ""; // GAS側でAPI_TOKENを設定した場合のみ同じ値
 
-  /**
-   * ========= ユーティリティ =========
-   */
-  const $ = (id) => document.getElementById(id);
+// 予約レンジ
+const START_HOUR = 9;
+const END_HOUR   = 20;
 
-  const isDebug = new URLSearchParams(location.search).get("debug") === "1";
-  if (isDebug) $("debugWrap").style.display = "block";
+const $ = (id) => document.getElementById(id);
 
-  function log(msg){
-    if (!isDebug) return;
-    const d = $("debugLog");
-    if (d) d.textContent += msg + "\n";
-  }
+const isDebug = new URLSearchParams(location.search).get("debug") === "1";
+if (isDebug) $("debugWrap").style.display = "block";
+function log(msg){ if(isDebug) $("debugLog").textContent += msg + "\n"; }
 
-  function setStatus(msg){
-    const s = $("status");
-    if (s) s.textContent = msg;
-  }
+function setStatus(msg){ $("status").textContent = msg; }
+function showResult(type, msg){
+  const r = $("result");
+  r.className = "msg " + (type==="ok" ? "ok" : "ng");
+  r.textContent = msg;
+  r.style.display = "block";
+}
+function clearResult(){
+  const r = $("result");
+  r.style.display = "none";
+  r.textContent = "";
+  r.className = "msg";
+}
 
-  function showResult(type, msg){
-    const r = $("result");
-    r.className = "msg " + (type === "ok" ? "ok" : "ng");
-    r.textContent = msg;
-    r.style.display = "block";
-  }
+/* ========= JSONP ========= */
+function jsonpRequest(url, params) {
+  return new Promise((resolve, reject) => {
+    const cbName = "__cb_" + Math.random().toString(36).slice(2);
+    const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, 15000);
+    function cleanup(){
+      clearTimeout(timer);
+      try { delete window[cbName]; } catch(_){}
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = (data) => { cleanup(); resolve(data); };
 
-  function clearResult(){
-    const r = $("result");
-    r.style.display = "none";
-    r.textContent = "";
-    r.className = "msg";
-  }
-
-  // 全角→半角（数字）
-  function toHalfWidthDigits(str){
-    return String(str || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-  }
-
-  // 電話番号：入力補助（自動ハイフン）
-  // ざっくり日本の一般的な形：11桁(090/080/070) → 3-4-4、10桁(固定/一部) → 2-4-4 or 3-3-4 等があるが、
-  // ここでは「見た目補助」なので最も多い形に寄せ、最終はGAS側で数字だけ正規化する。
-  function formatPhoneWithHyphen(raw){
-    let s = toHalfWidthDigits(raw).replace(/[ー－―‐]/g, "-");
-    s = s.replace(/\D/g, ""); // 数字だけ
-
-    // 0始まり前提で整形
-    if (s.length <= 3) return s;
-    if (s.length <= 7) return s.replace(/^(\d{3})(\d+)$/, "$1-$2");
-    if (s.length <= 11) return s.replace(/^(\d{3})(\d{4})(\d+)$/, "$1-$2-$3");
-
-    // 11桁超は以降はそのまま（入力ミスの可能性）
-    return s;
-  }
-
-  function normalizePhoneClient(raw){
-    // 送信用は数字だけ
-    return toHalfWidthDigits(raw).replace(/[ー－―‐]/g, "-").replace(/\D/g, "");
-  }
-
-  // JSONP
-  function jsonpRequest(url, params) {
-    return new Promise((resolve, reject) => {
-      const cbName = "__cb_" + Math.random().toString(36).slice(2);
-      const timer = setTimeout(() => { cleanup(); reject(new Error("JSONP timeout")); }, 15000);
-
-      function cleanup(){
-        clearTimeout(timer);
-        try { delete window[cbName]; } catch(_){}
-        if (script && script.parentNode) script.parentNode.removeChild(script);
-      }
-
-      window[cbName] = (data) => { cleanup(); resolve(data); };
-
-      const q = new URLSearchParams({ ...params, callback: cbName });
-      const script = document.createElement("script");
-      script.src = url + "?" + q.toString();
-      script.onerror = () => { cleanup(); reject(new Error("JSONP script load error")); };
-      document.head.appendChild(script);
-    });
-  }
-
-  function withTimeout(promise, ms, label) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timeout after " + ms + "ms")), ms)),
-    ]);
-  }
-
-  /**
-     * ========= LIFF 初期化 =========
-     */
-    window.addEventListener("load", async () => {
-      try {
-        clearResult();
-        setStatus("LIFF初期化中...");
-        log("href: " + location.href);
-        log("ua: " + navigator.userAgent);
-  
-        // 【修正1】withLoginOnExternalBrowser: true を削除しました
-        await withTimeout(
-          liff.init({ liffId: MY_LIFF_ID }),
-          15000,
-          "liff.init"
-        );
-        await liff.ready;
-  
-        log("isInClient: " + liff.isInClient());
-        log("isLoggedIn: " + liff.isLoggedIn());
-  
-        // 【修正2】ログインしていない場合の分岐を変更
-        if (liff.isLoggedIn()) {
-          // --- ログイン済み（LINEアプリ内など）の場合 ---
-          const profile = await liff.getProfile();
-          $("lineUserId").value = profile.userId;
-          setStatus("LINE連携OK： " + profile.displayName);
-        } else {
-          // --- 未ログイン（PCブラウザなど）の場合 ---
-          // 強制ログイン(liff.login)を削除し、ゲストモードとして表示
-          setStatus("Webブラウザモード（ゲスト利用）");
-          
-          // 必要であれば、ここに「LINEログインボタン」を表示する処理を追加してもOK
-          // 例: $("loginButtonArea").style.display = "block";
-        }
-  
-      } catch (e) {
-        setStatus("初期化エラー");
-        showResult("ng", "初期化に失敗しました。時間をおいて再度お試しください。");
-        log("FATAL: " + (e.stack || e.message || e));
-      }
-    });
-
-  /**
-   * ========= 電話番号入力補助 =========
-   */
-  const phoneEl = $("phone");
-  phoneEl.addEventListener("input", () => {
-    const before = phoneEl.value;
-    const formatted = formatPhoneWithHyphen(before);
-    if (formatted !== before) phoneEl.value = formatted;
+    const q = new URLSearchParams({ ...params, callback: cbName });
+    const script = document.createElement("script");
+    script.src = url + "?" + q.toString();
+    script.onerror = () => { cleanup(); reject(new Error("JSONP script load error")); };
+    document.head.appendChild(script);
   });
+}
 
-  /**
-   * ========= 送信 =========
-   */
-  $("myForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    clearResult();
+/* ========= Phone helper（あなたの既存のまま） ========= */
+function toHalfWidthDigits(str){
+  return String(str || "").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+function formatPhoneWithHyphen(raw){
+  let s = toHalfWidthDigits(raw).replace(/[ー－―‐]/g, "-");
+  s = s.replace(/\D/g, "");
+  if (s.length <= 3) return s;
+  if (s.length <= 7) return s.replace(/^(\d{3})(\d+)$/, "$1-$2");
+  if (s.length <= 11) return s.replace(/^(\d{3})(\d{4})(\d+)$/, "$1-$2-$3");
+  return s;
+}
+function normalizePhoneClient(raw){
+  return toHalfWidthDigits(raw).replace(/[ー－―‐]/g, "-").replace(/\D/g, "");
+}
 
-    const btn = $("submitBtn");
-    btn.disabled = true;
-    btn.textContent = "登録中...";
+/* ========= LIFF ========= */
+let lineUserId = "";
+async function initLiff(){
+  setStatus("LIFF初期化中...");
+  log("href: " + location.href);
+  log("ua: " + navigator.userAgent);
 
-    try {
-      const name = $("name").value.trim();
-      const kana = $("kana").value.trim();
-      const phoneRaw = $("phone").value.trim();
-      const email = $("email").value.trim();
-      const memo = $("memo").value.trim();
-      const lineUserId = $("lineUserId").value.trim();
+  await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
+  await liff.ready;
 
-      if (!name) throw new Error("お名前を入力してください");
-      const phone = normalizePhoneClient(phoneRaw);
-      if (!phone) throw new Error("電話番号を正しく入力してください");
+  log("isInClient: " + liff.isInClient());
+  log("isLoggedIn: " + liff.isLoggedIn());
 
-      setStatus("送信中...");
-      log("submit payload: " + JSON.stringify({ name, kana, phone, email, memo, lineUserId }));
+  if(!liff.isLoggedIn()){
+    // 外部ブラウザでも予約したいなら login へ
+    liff.login({ redirectUri: location.href });
+    return;
+  }
 
+  const profile = await liff.getProfile();
+  lineUserId = profile.userId;
+  $("lineUserId").value = lineUserId;
+
+  setStatus("LINE連携OK： " + profile.displayName);
+}
+
+/* ========= Router (hash) ========= */
+function setActiveTab(which){
+  $("tabRegister").classList.toggle("active", which==="register");
+  $("tabReserve").classList.toggle("active", which==="reserve");
+}
+
+function showView(view){
+  $("viewRegister").style.display = view==="register" ? "" : "none";
+  $("viewReserve").style.display   = view==="reserve" ? "" : "none";
+  $("viewConfirm").style.display   = view==="confirm" ? "" : "none";
+}
+
+function route(){
+  const hash = location.hash || "#/register";
+  clearResult();
+
+  if(hash.startsWith("#/reserve/confirm")){
+    $("pageTitle").textContent = "予約確認";
+    $("pageSub").textContent = "選択した日時とお客様情報を確認してください。";
+    setActiveTab("reserve");
+    showView("confirm");
+    const q = new URLSearchParams(hash.split("?")[1] || "");
+    const date = q.get("date");
+    const time = q.get("time");
+    openConfirm(date, time);
+    return;
+  }
+
+  if(hash.startsWith("#/reserve")){
+    $("pageTitle").textContent = "来店予約";
+    $("pageSub").textContent = "空き枠（〇）を選択してください。";
+    setActiveTab("reserve");
+    showView("reserve");
+    loadCalendar();
+    return;
+  }
+
+  $("pageTitle").textContent = "会員登録";
+  $("pageSub").textContent = "LINE連携のうえ、お客様情報を登録します。電話番号はハイフンありでもOKです。";
+  setActiveTab("register");
+  showView("register");
+}
+
+$("tabRegister").addEventListener("click", ()=> location.hash="#/register");
+$("tabReserve").addEventListener("click", ()=> location.hash="#/reserve");
+window.addEventListener("hashchange", route);
+
+/* ========= Register submit（既存のまま） ========= */
+$("phone").addEventListener("input", ()=>{
+  const before = $("phone").value;
+  const formatted = formatPhoneWithHyphen(before);
+  if(formatted !== before) $("phone").value = formatted;
+});
+
+$("myForm").addEventListener("submit", async (ev)=>{
+  ev.preventDefault();
+  clearResult();
+
+  const btn = $("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "登録中...";
+
+  try {
+    const name = $("name").value.trim();
+    const kana = $("kana").value.trim();
+    const phoneRaw = $("phone").value.trim();
+    const email = $("email").value.trim();
+    const memo = $("memo").value.trim();
+
+    if(!name) throw new Error("お名前を入力してください");
+    const phone = normalizePhoneClient(phoneRaw);
+    if(!phone) throw new Error("電話番号を正しく入力してください");
+
+    setStatus("送信中...");
+    const params = { action:"processForm", name, kana, phone, email, memo, lineUserId };
+    if (API_TOKEN) params.token = API_TOKEN;
+
+    const res = await jsonpRequest(GAS_EXEC_URL, params);
+    if(!res || res.status==="error") throw new Error(res?.message || "登録に失敗しました");
+
+    const label = (res.status === "created") ? "新規登録" : "更新";
+    showResult("ok", `${label}しました。${res.message}`);
+    setStatus("完了");
+
+  } catch(e){
+    setStatus("送信エラー");
+    showResult("ng", e.message || String(e));
+    log("SEND ERROR: " + (e.stack || e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "登録する";
+  }
+});
+
+/* ========= Reservation calendar ========= */
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtYMD(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function fmtJP(d){ const w="日月火水木金土"[d.getDay()]; return `${d.getMonth()+1}/${d.getDate()}(${w})`; }
+function getDaysToShow(){ return (window.innerWidth <= 640) ? 7 : 14; }
+function makeTimes(){
+  const arr=[];
+  for(let h=START_HOUR; h<END_HOUR; h++){
+    arr.push(`${pad(h)}:00`);
+    arr.push(`${pad(h)}:30`);
+  }
+  return arr;
+}
+
+let currentStart = new Date();
+currentStart.setHours(0,0,0,0);
+
+$("prevBtn").addEventListener("click", ()=>{ currentStart.setDate(currentStart.getDate()-getDaysToShow()); loadCalendar(); });
+$("nextBtn").addEventListener("click", ()=>{ currentStart.setDate(currentStart.getDate()+getDaysToShow()); loadCalendar(); });
+
+async function loadCalendar(){
+  $("tableArea").textContent = "読み込み中...";
+  const days = getDaysToShow();
+
+  const params = { action:"getAvailability", startDate: fmtYMD(currentStart), days: String(days) };
+  if (API_TOKEN) params.token = API_TOKEN;
+
+  const res = await jsonpRequest(GAS_EXEC_URL, params);
+  if(!res || res.status!=="ok") {
+    $("tableArea").innerHTML = `<div class="loading">読み込みエラー: ${res?.message || "unknown"}</div>`;
+    return;
+  }
+  const map = res.data || {};
+
+  // build table
+  const dates=[];
+  for(let i=0;i<days;i++){
+    const d=new Date(currentStart);
+    d.setDate(d.getDate()+i);
+    dates.push(d);
+  }
+  $("rangeLabel").textContent = `${fmtJP(dates[0])} 〜 ${fmtJP(dates[dates.length-1])}`;
+
+  const times = makeTimes();
+  let html = `<table><thead><tr><th class="timeHead">時間</th>${
+    dates.map(d=>{
+      const dow=d.getDay();
+      const cls=dow===6?'daySat':(dow===0?'daySun':'');
+      return `<th class="${cls}">${fmtJP(d)}</th>`;
+    }).join("")
+  }</tr></thead><tbody>`;
+
+  for(const t of times){
+    html += `<tr><td class="timeCell">${t}</td>`;
+    for(const d of dates){
+      const key = `${fmtYMD(d)} ${t}`;
+      const slot = map[key];
+
+      if(!slot){ html += `<td class="cell disabled">×</td>`; continue; }
+      if(slot.closed || slot.capacity<=0){ html += `<td class="cell disabled">×</td>`; continue; }
+      if(slot.booked >= slot.capacity){ html += `<td class="cell x">×</td>`; continue; }
+
+      html += `<td class="cell"><span class="okMark" data-date="${slot.date}" data-time="${slot.time}">〇</span></td>`;
+    }
+    html += `</tr>`;
+  }
+  html += `</tbody></table>`;
+  $("tableArea").innerHTML = html;
+
+  document.querySelectorAll(".okMark").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      const date = el.getAttribute("data-date");
+      const time = el.getAttribute("data-time");
+      location.hash = `#/reserve/confirm?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`;
+    });
+  });
+}
+
+/* ========= Confirm ========= */
+async function openConfirm(date, time){
+  if(!date || !time){
+    showResult("ng","日時が不正です");
+    return;
+  }
+  $("confirmDt").value = `${date} ${time}`;
+
+  // 顧客情報取得
+  try{
+    const params = { action:"getCustomerByLineUserId", lineUserId };
+    if (API_TOKEN) params.token = API_TOKEN;
+    const res = await jsonpRequest(GAS_EXEC_URL, params);
+    if(!res || res.status!=="ok") throw new Error(res?.message || "顧客情報取得に失敗しました");
+
+    const c = res.data;
+    $("cName").value = c.name || "";
+    $("cPhone").value = c.phone || "";
+    $("cEmail").value = c.email || "";
+  }catch(e){
+    showResult("ng", e.message || String(e));
+    $("confirmReserveBtn").disabled = true;
+  }
+
+  $("backToCalendar").onclick = ()=> location.hash = "#/reserve";
+
+  $("confirmReserveBtn").onclick = async ()=>{
+    $("confirmReserveBtn").disabled = true;
+    try{
       const params = {
-        action: "processForm",
-        name,
-        kana,
-        phone,
-        email,
-        memo,
+        action:"createReservation",
+        date, time,
         lineUserId,
+        comment: $("cComment").value || ""
       };
       if (API_TOKEN) params.token = API_TOKEN;
 
       const res = await jsonpRequest(GAS_EXEC_URL, params);
+      if(!res || res.status!=="ok") throw new Error(res?.message || "予約に失敗しました");
 
-      if (!res || res.status === "error") {
-        throw new Error((res && res.message) ? res.message : "登録に失敗しました");
-      }
-
-      // 新規/更新で出し分け
-      const label = (res.status === "created") ? "新規登録" : "更新";
-      const msg = `${label}しました。${res.message}`;
-
-      showResult("ok", msg + (res.normalizedPhone ? `（電話：${res.normalizedPhone}）` : ""));
+      showResult("ok", `予約が完了しました。\n予約番号：${res.reservationNo}\n${res.reservedAtText}`);
       setStatus("完了");
 
-      // LINE内なら少し見せて閉じる
-      if (liff.isInClient()) {
-        setTimeout(() => liff.closeWindow(), 900);
-      }
-
-    } catch (e) {
-      setStatus("送信エラー");
+      if (liff.isInClient()) setTimeout(()=> liff.closeWindow(), 1200);
+    }catch(e){
       showResult("ng", e.message || String(e));
-      log("SEND ERROR: " + (e.stack || e.message || e));
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "登録する";
+      $("confirmReserveBtn").disabled = false;
     }
-  });
+  };
+}
+
+/* ========= Boot ========= */
+window.addEventListener("load", async ()=>{
+  try{
+    await initLiff();
+    route();
+  }catch(e){
+    setStatus("初期化エラー");
+    showResult("ng","LIFF初期化に失敗しました。時間をおいて再度お試しください。");
+    log("FATAL: " + (e.stack || e.message || e));
+  }
+});
 </script>
 </body>
 </html>
