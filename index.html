@@ -257,6 +257,13 @@ async function initLiff(){
   await liff.init({ liffId: MY_LIFF_ID, withLoginOnExternalBrowser: true });
   await liff.ready;
 
+  const st = liff.state || "";
+  if (st.startsWith("/reserve")) {
+    location.hash = "#/reserve";
+  } else if (st.startsWith("/register")) {
+    location.hash = "#/register";
+  }
+
   log("isInClient: " + liff.isInClient());
   log("isLoggedIn: " + liff.isLoggedIn());
 
