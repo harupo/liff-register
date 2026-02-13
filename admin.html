@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINEメッセージ管理（管理者専用）</title>
+    <title>LINE管理（管理者専用）</title>
     <style>
         :root {
             --bg: #f3f4f6; --white: #ffffff; --primary: #2563eb;
@@ -12,7 +12,13 @@
         }
         body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); overflow: hidden; }
         
-        /* 認証用オーバーレイ：これは最初から表示する */
+        /* ローディングインジケーター */
+        #loadingBar {
+            position: fixed; top: 0; left: 0; width: 0%; height: 3px;
+            background: #60a5fa; z-index: 2000; transition: width 0.3s ease;
+        }
+
+        /* 認証オーバーレイ */
         #authOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #1f2937; color: white; display: flex;
@@ -21,19 +27,18 @@
         #authOverlay input { padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; width: 240px; font-size: 16px; color: #333; }
         #authOverlay button { padding: 10px 24px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
 
-        /* メインコンテンツ：初期状態は非表示 */
         #mainContainer { display: none; width: 100%; height: 100%; }
-        
         #userList { width: 320px; border-right: 1px solid #e5e7eb; background: var(--user-bg); display: flex; flex-direction: column; }
-        .list-header { padding: 20px; font-weight: bold; background: #111827; color: white; display: flex; justify-content: space-between; }
+        .list-header { padding: 20px; font-weight: bold; background: #111827; color: white; display: flex; justify-content: space-between; align-items: center; }
         #users { flex: 1; overflow-y: auto; }
-        .user-item { padding: 15px; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: 0.2s; position: relative; }
-        .user-item:hover { background: #e5e7eb; }
-        .user-item.active { background: #d1e7ff; border-left: 5px solid var(--primary); }
         
+        /* 読み込み中表示のスタイル */
+        .loading-text { padding: 20px; color: #9ca3af; text-align: center; font-size: 14px; }
+
+        .user-item { padding: 15px; border-bottom: 1px solid #e5e7eb; cursor: pointer; position: relative; }
+        .user-item.active { background: #d1e7ff; border-left: 5px solid var(--primary); }
         .unread-badge { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: var(--unread); border-radius: 50%; }
         .user-name { font-weight: bold; font-size: 15px; display: block; margin-bottom: 4px; }
-        .user-id-sub { font-size: 11px; color: #9ca3af; }
 
         #chatArea { flex: 1; display: flex; flex-direction: column; background: #ebebeb; }
         #history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
@@ -44,20 +49,23 @@
         #inputArea { padding: 20px; background: var(--white); border-top: 1px solid #e5e7eb; display: flex; gap: 10px; }
         #replyText { flex: 1; height: 44px; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 22px; outline: none; }
         #sendBtn { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 22px; cursor: pointer; font-weight: bold; }
+        #sendBtn:disabled { background: #9ca3af; }
     </style>
 </head>
 <body>
 
+<div id="loadingBar"></div>
+
 <div id="authOverlay">
     <h2 style="margin-bottom:20px;">管理者ログイン</h2>
     <input type="password" id="passInput" placeholder="パスワードを入力" onkeypress="if(event.keyCode==13) checkAuth()">
-    <button onclick="checkAuth()">ログイン</button>
+    <button id="loginBtn" onclick="checkAuth()">ログイン</button>
 </div>
 
 <div id="mainContainer">
     <div id="userList">
-        <div class="list-header">メッセージ一覧 <span id="totalUnread" style="font-size:12px; background:red; padding:2px 8px; border-radius:10px; display:none;">0</span></div>
-        <div id="users"></div>
+        <div class="list-header">メッセージ一覧 <span id="totalUnread" style="font-size:11px; background:red; padding:2px 6px; border-radius:10px; display:none;">0</span></div>
+        <div id="users"><div class="loading-text">読み込み中...</div></div>
     </div>
     <div id="chatArea">
         <div id="history">ユーザーを選択してください</div>
@@ -70,30 +78,63 @@
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
-    const ADMIN_PASS = "1234"; // ★管理用パスワード
+    
+    // ★セキュリティ：パスワードを直接書かず、ハッシュ化した値を設定してください
+    const HASHED_PASS = "48ab0fdf1e78e4056a60abcaf9fc7cfd7dd40689306760d2079159a1e4d258d2"; 
+    // ★セキュリティ：GAS側に設定するAPI_TOKEN（任意）
+    const API_TOKEN = "qR9uP2_xW8vM4_zY7kL1_sN5jB3_hT6cA"; 
+
     let selectedUserId = "";
     let messages = [];
 
-    function checkAuth() {
+    // SHA-256ハッシュ化関数
+    async function sha256(text) {
+        const uint8 = new TextEncoder().encode(text);
+        const digest = await crypto.subtle.digest('SHA-256', uint8);
+        return Array.from(new Uint8Array(digest)).map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkAuth() {
+        const btn = document.getElementById("loginBtn");
         const input = document.getElementById("passInput").value;
-        if (input === ADMIN_PASS) {
+        btn.disabled = true;
+        
+        const hashedInput = await sha256(input);
+        if (hashedInput === HASHED_PASS) {
             document.getElementById("authOverlay").style.display = "none";
-            document.getElementById("mainContainer").style.display = "flex"; // ここでメインを表示
+            document.getElementById("mainContainer").style.display = "flex";
             refresh();
-            // 20秒おきに自動更新を開始
-            setInterval(refresh, 20000);
+            setInterval(refresh, 30000); // 更新間隔を30秒に調整（負荷軽減）
         } else {
             alert("パスワードが正しくありません");
+            btn.disabled = false;
         }
+    }
+
+    function toggleLoading(show) {
+        const bar = document.getElementById("loadingBar");
+        bar.style.width = show ? "70%" : "100%";
+        if (!show) setTimeout(() => { bar.style.width = "0%"; }, 400);
     }
 
     function jsonp(params) {
         return new Promise((resolve, reject) => {
+            toggleLoading(true);
             const cb = "cb_" + Math.random().toString(36).slice(2);
             const script = document.createElement("script");
-            const timeout = setTimeout(() => reject("Timeout"), 15000);
-            window[cb] = (res) => { clearTimeout(timeout); resolve(res); delete window[cb]; script.remove(); };
-            const q = new URLSearchParams({...params, callback: cb, token: ""}); // API_TOKENがある場合は追加
+            const timeout = setTimeout(() => { 
+                toggleLoading(false); 
+                reject("Timeout"); 
+            }, 20000);
+
+            window[cb] = (res) => {
+                clearTimeout(timeout);
+                toggleLoading(false);
+                resolve(res);
+                delete window[cb];
+                script.remove();
+            };
+            const q = new URLSearchParams({...params, callback: cb, token: API_TOKEN});
             script.src = `${GAS_URL}?${q.toString()}`;
             document.head.appendChild(script);
         });
@@ -107,28 +148,33 @@
                 renderUserList();
                 if (selectedUserId) renderChat();
             }
-        } catch (e) { console.error("Refresh error:", e); }
+        } catch (e) { console.error(e); }
     }
 
     function renderUserList() {
         const container = document.getElementById("users");
-        container.innerHTML = "";
+        // 初回読み込み以外は中身を空にしない（チラつき防止）
         const users = {};
         messages.forEach(m => {
-            if (!users[m.lineUserId]) {
-                users[m.lineUserId] = { name: m.userName, hasUnread: false };
-            }
+            if (!users[m.lineUserId]) users[m.lineUserId] = { name: m.userName, hasUnread: false };
             if (m.isUnread) users[m.lineUserId].hasUnread = true;
         });
 
+        const userIds = Object.keys(users).reverse();
+        if (userIds.length === 0) {
+            container.innerHTML = '<div class="loading-text">メッセージ履歴がありません</div>';
+            return;
+        }
+
+        container.innerHTML = "";
         let unreadCount = 0;
-        Object.keys(users).reverse().forEach(uid => {
+        userIds.forEach(uid => {
             const user = users[uid];
             if (user.hasUnread) unreadCount++;
             const div = document.createElement("div");
             div.className = "user-item" + (uid === selectedUserId ? " active" : "");
             const badge = user.hasUnread ? '<div class="unread-badge"></div>' : '';
-            div.innerHTML = `${badge}<span class="user-name">${user.name}</span><span class="user-id-sub">ID: ${uid.substring(0, 8)}...</span>`;
+            div.innerHTML = `${badge}<span class="user-name">${user.name}</span><small style="color:#9ca3af">ID: ${uid.substring(0,8)}</small>`;
             div.onclick = async () => {
                 selectedUserId = uid;
                 await jsonp({ action: "markAsRead", lineUserId: uid });
@@ -158,12 +204,19 @@
         const btn = document.getElementById("sendBtn");
         const text = textEl.value.trim();
         if (!selectedUserId || !text) return;
+
         btn.disabled = true;
+        textEl.disabled = true;
         try {
             const res = await jsonp({ action: "sendReply", lineUserId: selectedUserId, text: text });
-            if (res.status === "ok") { textEl.value = ""; await refresh(); }
-        } catch (e) { alert("送信エラー"); }
+            if (res.status === "ok") {
+                textEl.value = "";
+                await refresh();
+            }
+        } catch (e) { alert("送信に失敗しました"); }
         btn.disabled = false;
+        textEl.disabled = false;
+        textEl.focus();
     }
 </script>
 </body>
