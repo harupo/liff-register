@@ -10,18 +10,20 @@
             --user-bg: #f9fafb; --in-msg: #ffffff; --out-msg: #dcf8c6;
             --unread: #ff4d4f;
         }
-        body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); overflow: hidden; }
+        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); overflow: hidden; }
         
-        /* 認証用オーバーレイ */
+        /* 認証用オーバーレイ：これは最初から表示する */
         #authOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #1f2937; color: white; display: flex;
             flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
         }
-        #authOverlay input { padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; width: 240px; font-size: 16px; }
+        #authOverlay input { padding: 12px; border-radius: 8px; border: none; margin-bottom: 10px; width: 240px; font-size: 16px; color: #333; }
         #authOverlay button { padding: 10px 24px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
 
-        /* ユーザーリスト */
+        /* メインコンテンツ：初期状態は非表示 */
+        #mainContainer { display: none; width: 100%; height: 100%; }
+        
         #userList { width: 320px; border-right: 1px solid #e5e7eb; background: var(--user-bg); display: flex; flex-direction: column; }
         .list-header { padding: 20px; font-weight: bold; background: #111827; color: white; display: flex; justify-content: space-between; }
         #users { flex: 1; overflow-y: auto; }
@@ -29,32 +31,22 @@
         .user-item:hover { background: #e5e7eb; }
         .user-item.active { background: #d1e7ff; border-left: 5px solid var(--primary); }
         
-        /* ② 未読バッジ */
-        .unread-badge {
-            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            width: 12px; height: 12px; background: var(--unread); border-radius: 50%;
-            box-shadow: 0 0 5px rgba(255,77,79,0.5);
-        }
+        .unread-badge { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: var(--unread); border-radius: 50%; }
         .user-name { font-weight: bold; font-size: 15px; display: block; margin-bottom: 4px; }
         .user-id-sub { font-size: 11px; color: #9ca3af; }
 
-        /* チャットエリア */
         #chatArea { flex: 1; display: flex; flex-direction: column; background: #ebebeb; }
         #history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        
-        .msg { max-width: 75%; padding: 10px 14px; border-radius: 15px; font-size: 14px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .msg small { display: block; font-size: 10px; color: #6b7280; margin-bottom: 4px; }
-        .in { align-self: flex-start; background: var(--in-msg); border-bottom-left-radius: 2px; }
-        .out { align-self: flex-end; background: var(--out-msg); border-bottom-right-radius: 2px; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 15px; font-size: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .in { align-self: flex-start; background: var(--in-msg); }
+        .out { align-self: flex-end; background: var(--out-msg); }
 
-        /* 入力エリア */
         #inputArea { padding: 20px; background: var(--white); border-top: 1px solid #e5e7eb; display: flex; gap: 10px; }
-        #replyText { flex: 1; height: 44px; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 22px; outline: none; resize: none; font-size: 15px; }
+        #replyText { flex: 1; height: 44px; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 22px; outline: none; }
         #sendBtn { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 22px; cursor: pointer; font-weight: bold; }
-        #sendBtn:disabled { background: #9ca3af; }
     </style>
 </head>
-<body id="mainBody" style="visibility: hidden;">
+<body>
 
 <div id="authOverlay">
     <h2 style="margin-bottom:20px;">管理者ログイン</h2>
@@ -62,51 +54,51 @@
     <button onclick="checkAuth()">ログイン</button>
 </div>
 
-<div id="userList">
-    <div class="list-header">メッセージ一覧 <span id="totalUnread" style="font-size:12px; background:red; padding:2px 8px; border-radius:10px; display:none;">0</span></div>
-    <div id="users"></div>
-</div>
-
-<div id="chatArea">
-    <div id="history">ユーザーを選択してください</div>
-    <div id="inputArea">
-        <textarea id="replyText" placeholder="返信を入力..."></textarea>
-        <button id="sendBtn" onclick="sendReply()">送信</button>
+<div id="mainContainer">
+    <div id="userList">
+        <div class="list-header">メッセージ一覧 <span id="totalUnread" style="font-size:12px; background:red; padding:2px 8px; border-radius:10px; display:none;">0</span></div>
+        <div id="users"></div>
+    </div>
+    <div id="chatArea">
+        <div id="history">ユーザーを選択してください</div>
+        <div id="inputArea">
+            <textarea id="replyText" placeholder="返信を入力..."></textarea>
+            <button id="sendBtn" onclick="sendReply()">送信</button>
+        </div>
     </div>
 </div>
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxV6pUiDmTdd5mz4nKpND4h5K9_2rOi21Hi39QAI0xXBBVYKhGmF7kFOufwJVBLj5YZ/exec";
-    const ADMIN_PASS = "1234"; // ★ここに任意のパスワードを設定してください
+    const ADMIN_PASS = "1234"; // ★管理用パスワード
     let selectedUserId = "";
     let messages = [];
 
-    // 認証チェック
     function checkAuth() {
         const input = document.getElementById("passInput").value;
         if (input === ADMIN_PASS) {
             document.getElementById("authOverlay").style.display = "none";
-            document.getElementById("mainBody").style.visibility = "visible";
+            document.getElementById("mainContainer").style.display = "flex"; // ここでメインを表示
             refresh();
+            // 20秒おきに自動更新を開始
+            setInterval(refresh, 20000);
         } else {
             alert("パスワードが正しくありません");
         }
     }
 
-    // JSONP通信
     function jsonp(params) {
         return new Promise((resolve, reject) => {
             const cb = "cb_" + Math.random().toString(36).slice(2);
             const script = document.createElement("script");
             const timeout = setTimeout(() => reject("Timeout"), 15000);
             window[cb] = (res) => { clearTimeout(timeout); resolve(res); delete window[cb]; script.remove(); };
-            const q = new URLSearchParams({...params, callback: cb});
+            const q = new URLSearchParams({...params, callback: cb, token: ""}); // API_TOKENがある場合は追加
             script.src = `${GAS_URL}?${q.toString()}`;
             document.head.appendChild(script);
         });
     }
 
-    // 更新処理
     async function refresh() {
         try {
             const res = await jsonp({ action: "getMessages" });
@@ -118,61 +110,41 @@
         } catch (e) { console.error("Refresh error:", e); }
     }
 
-    // ① 名前の紐付けと ② 未読バッジの表示
     function renderUserList() {
         const container = document.getElementById("users");
         container.innerHTML = "";
-        
-        // ユーザーごとに最新の状態を集計
         const users = {};
         messages.forEach(m => {
             if (!users[m.lineUserId]) {
-                users[m.lineUserId] = { name: m.userName, hasUnread: false, lastTime: m.timestamp };
+                users[m.lineUserId] = { name: m.userName, hasUnread: false };
             }
             if (m.isUnread) users[m.lineUserId].hasUnread = true;
         });
 
-        let totalUnread = 0;
+        let unreadCount = 0;
         Object.keys(users).reverse().forEach(uid => {
             const user = users[uid];
-            if (user.hasUnread) totalUnread++;
-
+            if (user.hasUnread) unreadCount++;
             const div = document.createElement("div");
             div.className = "user-item" + (uid === selectedUserId ? " active" : "");
-            
             const badge = user.hasUnread ? '<div class="unread-badge"></div>' : '';
-            div.innerHTML = `
-                ${badge}
-                <span class="user-name">${user.name}</span>
-                <span class="user-id-sub">ID: ${uid.substring(0, 8)}...</span>
-            `;
-            
+            div.innerHTML = `${badge}<span class="user-name">${user.name}</span><span class="user-id-sub">ID: ${uid.substring(0, 8)}...</span>`;
             div.onclick = async () => {
                 selectedUserId = uid;
-                // 選択時にGAS側の既読フラグを更新
                 await jsonp({ action: "markAsRead", lineUserId: uid });
-                renderUserList();
-                renderChat();
+                refresh();
             };
             container.appendChild(div);
         });
-
         const totalBadge = document.getElementById("totalUnread");
-        if (totalUnread > 0) {
-            totalBadge.innerText = totalUnread;
-            totalBadge.style.display = "inline";
-        } else {
-            totalBadge.style.display = "none";
-        }
+        totalBadge.style.display = unreadCount > 0 ? "inline" : "none";
+        totalBadge.innerText = unreadCount;
     }
 
-    // チャット画面描画
     function renderChat() {
         const history = document.getElementById("history");
         history.innerHTML = "";
-        const filtered = messages.filter(m => m.lineUserId === selectedUserId);
-        
-        filtered.forEach(m => {
+        messages.filter(m => m.lineUserId === selectedUserId).forEach(m => {
             const div = document.createElement("div");
             div.className = `msg ${m.direction}`;
             div.innerHTML = `<small>${m.timestamp}</small>${m.text}`;
@@ -181,26 +153,18 @@
         history.scrollTop = history.scrollHeight;
     }
 
-    // 返信送信
     async function sendReply() {
         const textEl = document.getElementById("replyText");
         const btn = document.getElementById("sendBtn");
         const text = textEl.value.trim();
         if (!selectedUserId || !text) return;
-        
         btn.disabled = true;
         try {
             const res = await jsonp({ action: "sendReply", lineUserId: selectedUserId, text: text });
-            if (res.status === "ok") {
-                textEl.value = "";
-                await refresh();
-            }
-        } catch (e) { alert("送信エラーが発生しました"); }
+            if (res.status === "ok") { textEl.value = ""; await refresh(); }
+        } catch (e) { alert("送信エラー"); }
         btn.disabled = false;
     }
-
-    // 20秒おきに自動更新
-    setInterval(refresh, 20000);
 </script>
 </body>
 </html>
