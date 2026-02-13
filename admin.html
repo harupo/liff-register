@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>メッセージ管理画面</title>
+  <style>
+    body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; }
+    #userList { width: 250px; border-right: 1px solid #ccc; overflow-y: auto; background: #f9f9f9; }
+    #chatArea { flex: 1; display: flex; flex-direction: column; }
+    #history { flex: 1; overflow-y: auto; padding: 20px; background: #eee; }
+    #inputArea { padding: 20px; border-top: 1px solid #ccc; display: flex; gap: 10px; }
+    .msg { margin-bottom: 10px; padding: 10px; border-radius: 8px; max-width: 70%; }
+    .in { background: white; align-self: flex-start; }
+    .out { background: #90ee90; align-self: flex-end; margin-left: auto; }
+    .user-item { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; }
+    .user-item:hover { background: #eef; }
+  </style>
+</head>
+<body>
+
+<div id="userList"><h3>ユーザー一覧</h3><div id="users"></div></div>
+<div id="chatArea">
+  <div id="history">チャットを選択してください</div>
+  <div id="inputArea">
+    <textarea id="replyText" style="flex:1"></textarea>
+    <button onclick="sendReply()">送信</button>
+  </div>
+</div>
+
+<script>
+  const GAS_URL = "YOUR_GAS_DEPLOY_URL";
+  let allMessages = [];
+  let selectedUserId = "";
+
+  async function loadMessages() {
+    // action=getMessages でJSONPリクエストを投げる処理
+    // (既存のjsonpRequest関数を流用してください)
+  }
+
+  function renderUsers() {
+    // lineUserIdでグルーピングして左側に表示
+  }
+
+  async function sendReply() {
+    const text = document.getElementById("replyText").value;
+    if(!selectedUserId || !text) return;
+    
+    // action=sendReply, lineUserId, text でGASに送信
+  }
+
+  // 定期的にメッセージを更新
+  setInterval(loadMessages, 10000);
+</script>
+</body>
+</html>
